@@ -3,8 +3,7 @@ import { motion } from 'framer-motion';
 import { Puzzle, Search, BookOpen, Sparkles } from 'lucide-react';
 import BasketballScene from '@/components/basketball/Basketball3D';
 import { TeamList, RightPanel, NavRing, TeamsModal, MethodModal, AnalyzeModal } from '@/components/Panels';
-import { nbaTeams, getWeaknesses, refreshTeamLive } from '@/data/nbaTeams';
-import { base44 } from '@/api/base44Client';
+import { nbaTeams, buildTeamAnalysis, refreshTeamLive } from '@/data/nbaTeams';
 
 const VIEWS = ['identity', 'weakness', 'targets', 'fit', 'missing'];
 
@@ -45,17 +44,7 @@ export default function Home() {
     if (analysis && analysis.startsWith(`${team.abbr}:`)) return;
     setLoading(true); setAnalysis('');
     try {
-      const w = getWeaknesses(team);
-      const prompt = `You are an NBA roster analyst for the "Missing Piece" platform. Analyze the ${team.city} ${team.name} (${team.abbr}).
-Identity scores (0-100): ${JSON.stringify(team.identity)}.
-Team stats: ${JSON.stringify(team.stats)}.
-Starting five: ${team.roster.map((p) => `${p.name} (${p.pos}) ${p.ppg}ppg`).join(', ')}.
-Biggest weaknesses: ${w.map((x) => x.key).join(', ')}.
-Recommended archetype: ${team.missingPiece.archetype}.
-
-Write 6 short bullet points: (1) what this team does well, (2) the main weakness, (3) why a ${team.missingPiece.archetype} is the missing piece, (4-5) two realistic target players and why, (6) the risk of the fit. Be concise and specific.`;
-      const res = await base44.integrations.Core.InvokeLLM({ prompt });
-      setAnalysis((typeof res === 'string' ? res : JSON.stringify(res)));
+      setAnalysis(buildTeamAnalysis(team));
     } catch (e) {
       setAnalysis('Analysis unavailable right now: ' + (e?.message || 'unknown error'));
     }

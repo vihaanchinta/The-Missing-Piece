@@ -9,20 +9,7 @@
 // `missingPiece` → archetype + realistic target players that fill the biggest gap
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { base44 } from '@/api/base44Client';
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  ⬇  ONE SPOT FOR YOUR NBA API KEY — paste your free balldontlie key here  ⬇
-//  Get one at https://balldontlie.io (free). The app calls balldontlie from
-//  the browser with this key to pull live W/L records, ppg & oppg.
-//  (Production: move this into a Base44 backend function and read
-//  process.env.BALLDONTLIE_API_KEY instead — needs Builder+.)
-export const NBA_API_KEY = 'YOUR_BALDONTLIE_KEY';
-// ═══════════════════════════════════════════════════════════════════════════
-const BDL = 'https://api.balldontlie.io/nba/v1';
-
-// Live records baked from your balldontlie key (2024-25 regular season).
-// Remaining teams refresh on demand via refreshTeamLive() when selected.
+// Curated 2024–25 snapshot used by the app without a backend or API key.
 const LIVE_RECORDS = {
   ATL: { record:'40-44', ppg:117.9, oppg:119.4 },
   BOS: { record:'61-21', ppg:116.3, oppg:107.2 },
@@ -451,7 +438,7 @@ const BENCH = {
 nbaTeams.forEach((t) => {
   t.bench = (BENCH[t.abbr] || []).map(([name, pos, ppg, rpg, apg]) => ({ name, pos, ppg, rpg, apg }));
 });
-// apply baked live records (record + ppg + oppg from your balldontlie key)
+// Apply the curated season snapshot.
 nbaTeams.forEach((t) => {
   if (LIVE_RECORDS[t.abbr]) {
     t.record = LIVE_RECORDS[t.abbr].record;
@@ -508,35 +495,26 @@ export const leagueAverages = (() => {
   return avg;
 })();
 
-// ── live refresh: balldontlie (key) → records/ppg/oppg; web-search fallback ─
-// Called by the in-app "Refresh" button. With a key pasted into NBA_API_KEY it
-// pulls the current W/L record + ppg + oppg from balldontlie's free /games
-// endpoint. Without a key (or on CORS failure) it falls back to an LLM web
-// search that also returns full stats + roster + bench.
+// Refresh safely returns the bundled snapshot. This keeps the interface usable
+// offline and avoids exposing an API key in the browser.
 export async function refreshTeamLive(abbr) {
   const team = nbaTeams.find((t) => t.abbr === abbr);
-  if (!team) return null;
-  if (NBA_API_KEY && NBA_API_KEY !== 'YOUR_BALDONTLIE_KEY') {
-    try {
-      const h = { Authorization: NBA_API_KEY };
-      const r = await fetch(`${BDL}/games?seasons[]=2024&team_ids[]=${team.id}&postseason=false&per_page=100`, { headers: h });
-      const j = await r.json();
-      let w = 0, l = 0, pf = 0, pa = 0;
-      (j.data || []).forEach((g) => {
-        if (g.status !== 'Final') return;
-        const home = g.home_team.id === team.id;
-        const my = home ? g.home_team_score : g.visitor_team_score;
-        const opp = home ? g.visitor_team_score : g.home_team_score;
-        if (my > opp) w++; else if (my < opp) l++;
-        pf += my; pa += opp;
-      });
-      const gp = w + l;
-      if (gp) return { ...team, record: `${w}-${l}`, stats: { ...team.stats, ppg: +(pf / gp).toFixed(1), oppg: +(pa / gp).toFixed(1) }, _live: true };
-    } catch (e) { /* fall through to web search */ }
-  }
-  const prompt = `Return the most current NBA season data for the ${team.city} ${team.name}. Use public 2024-25 season stats. Include current win-loss record (e.g. "45-37"); team per-game averages (ppg, oppg, pace, offRtg, defRtg, netRtg, efg, threePct, ftPct, ast, reb, stl, blk); 5 starters and 5 key bench players each with position, ppg, rpg, apg. Be accurate and current — do not invent numbers.`;
-  const schema = { type: 'object', properties: { record: { type: 'string' }, stats: { type: 'object', properties: { ppg:{type:'number'}, oppg:{type:'number'}, pace:{type:'number'}, offRtg:{type:'number'}, defRtg:{type:'number'}, netRtg:{type:'number'}, efg:{type:'number'}, threePct:{type:'number'}, ftPct:{type:'number'}, ast:{type:'number'}, reb:{type:'number'}, stl:{type:'number'}, blk:{type:'number'} } }, roster: { type: 'array', items: { type: 'object', properties: { name:{type:'string'}, pos:{type:'string'}, ppg:{type:'number'}, rpg:{type:'number'}, apg:{type:'number'} } } }, bench: { type: 'array', items: { type: 'object', properties: { name:{type:'string'}, pos:{type:'string'}, ppg:{type:'number'}, rpg:{type:'number'}, apg:{type:'number'} } } } } };
-  const res = await base44.integrations.Core.InvokeLLM({ prompt, add_context_from_internet: true, response_json_schema: schema, model: 'gemini_3_flash' });
-  if (!res || !res.stats) throw new Error('No live data returned');
-  return { ...team, record: res.record || team.record, stats: { ...team.stats, ...res.stats }, roster: res.roster?.length ? res.roster : team.roster, bench: res.bench?.length ? res.bench : team.bench, _live: true };
+  return team ? { ...team, stats: { ...team.stats }, roster: [...team.roster], bench: [...team.bench] } : null;
+}
+
+export function buildTeamAnalysis(team) {
+  const weaknesses = getWeaknesses(team);
+  const strengths = getStrengths(team);
+  const [primary, secondary] = weaknesses;
+  const targets = team.missingPiece.examples.join(' and ');
+  const netRating = team.stats.netRtg >= 0 ? `+${team.stats.netRtg}` : team.stats.netRtg;
+
+  return [
+    `• ${team.city} ranks strongest in ${strengths.map((item) => item.key).join(' and ')} (${strengths.map((item) => item.value).join('/')}).`,
+    `• The clearest pressure point is ${primary.key} (${primary.value}/100), with ${secondary.key} the secondary need.`,
+    `• A ${team.missingPiece.archetype} directly improves the weakest parts of this roster profile.`,
+    `• ${targets} are the suggested stylistic fits for this construction.`,
+    `• The projected fit score is ${team.missingPiece.fit}/100; the club's net rating is ${netRating}.`,
+    `• Risk: adding talent without preserving the team's ${strengths[0].key} identity can dilute its biggest advantage.`
+  ].join('\n');
 }
