@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-heading: 'Orbitron', sans-serif;
+    --font-ui: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+
+    --background: 240 40% 4%;
+    --foreground: 0 0% 95%;
+    --card: 240 30% 7%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 30% 7%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 25 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 20% 12%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 240 20% 12%;
+    --muted-foreground: 240 10% 55%;
+    --accent: 25 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 20% 15%;
+    --input: 240 20% 15%;
+    --ring: 25 100% 50%;
+    --chart-1: 25 100% 50%;
+    --chart-2: 30 90% 55%;
+    --chart-3: 200 80% 50%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.75rem;
+    --sidebar-background: 240 30% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 25 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 20% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 240 20% 15%;
+    --sidebar-ring: 25 100% 50%;
+  }
+
+  .dark {
+    --background: 240 40% 4%;
+    --foreground: 0 0% 95%;
+    --card: 240 30% 7%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 30% 7%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 25 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 20% 12%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 240 20% 12%;
+    --muted-foreground: 240 10% 55%;
+    --accent: 25 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 20% 15%;
+    --input: 240 20% 15%;
+    --ring: 25 100% 50%;
+    --chart-1: 25 100% 50%;
+    --chart-2: 30 90% 55%;
+    --chart-3: 200 80% 50%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 30% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 25 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 20% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 240 20% 15%;
+    --sidebar-ring: 25 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
